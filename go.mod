@@ -20,7 +20,7 @@ require (
 	github.com/sigstore/cosign v1.13.1
 	github.com/tektoncd/pipeline v0.41.0
 	github.com/tektoncd/plumbing v0.0.0-20221102182345-5dbcfda657d7
-	github.com/tektoncd/triggers v0.21.0
+	github.com/tektoncd/triggers v0.22.2
 	github.com/titanous/rocacheck v0.0.0-20171023193734-afe73141d399
 	go.opencensus.io v0.24.0
 	go.uber.org/zap v1.23.0
@@ -279,12 +279,12 @@ require (
 	go.uber.org/automaxprocs v1.5.1 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/exp v0.0.0-20220823124025-807a23277127 // indirect
-	golang.org/x/net v0.2.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.1.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.2.0 // indirect
-	golang.org/x/term v0.2.0 // indirect
-	golang.org/x/text v0.4.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/term v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af // indirect
 	golang.org/x/tools v0.1.12 // indirect
 	google.golang.org/api v0.100.0 // indirect
@@ -295,7 +295,7 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	k8s.io/apiextensions-apiserver v0.25.2 // indirect
+	k8s.io/apiextensions-apiserver v0.25.3 // indirect
 	k8s.io/gengo v0.0.0-20220613173612-397b4ae3bce7 // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1 // indirect
