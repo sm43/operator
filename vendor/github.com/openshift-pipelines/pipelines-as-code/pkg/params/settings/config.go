@@ -2,16 +2,19 @@ package settings
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"go.uber.org/zap"
 )
 
 const (
-	ApplicationNameKey                    = "application-name"
-	HubURLKey                             = "hub-url"
-	HubCatalogNameKey                     = "hub-catalog-name"
+	ApplicationNameKey = "application-name"
+	HubURLKey          = "hub-url"
+	HubCatalogNameKey  = "hub-catalog-name"
+	//nolint: gosec
 	MaxKeepRunUpperLimitKey               = "max-keep-run-upper-limit"
 	DefaultMaxKeepRunsKey                 = "default-max-keep-runs"
 	RemoteTasksKey                        = "remote-tasks"
@@ -37,7 +40,7 @@ const (
 	bitbucketCloudCheckSourceIPDefaultValue = "true"
 	PACApplicationNameDefaultValue          = "Pipelines as Code CI"
 	HubURLDefaultValue                      = "https://api.hub.tekton.dev/v1"
-	hubCatalogNameDefaultValue              = "tekton"
+	HubCatalogNameDefaultValue              = "tekton"
 	AutoConfigureNewGitHubRepoDefaultValue  = "false"
 
 	ErrorLogSnippetKey   = "error-log-snippet"
@@ -51,14 +54,27 @@ const (
 
 	ErrorDetectionSimpleRegexpKey   = "error-detection-simple-regexp"
 	errorDetectionSimpleRegexpValue = `^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+):([ ]*)?(?P<error>.*)`
+
+	RememberOKToTestKey   = "remember-ok-to-test"
+	rememberOKToTestValue = "true"
 )
 
-var TknBinaryName = `tkn`
+var (
+	TknBinaryName       = `tkn`
+	hubCatalogNameRegex = regexp.MustCompile(`^catalog-(\d+)-`)
+)
+
+type HubCatalog struct {
+	ID   string
+	Name string
+	URL  string
+}
 
 type Settings struct {
-	ApplicationName                    string
-	HubURL                             string
-	HubCatalogName                     string
+	ApplicationName string
+	// HubURL                             string
+	// HubCatalogName                     string
+	HubCatalogs                        *sync.Map
 	RemoteTasks                        bool
 	MaxKeepRunsUpperLimit              int
 	DefaultMaxKeepRuns                 int
@@ -81,11 +97,14 @@ type Settings struct {
 	CustomConsoleURL       string
 	CustomConsolePRdetail  string
 	CustomConsolePRTaskLog string
+
+	RememberOKToTest bool
 }
 
 func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[string]string) error {
 	// pass through defaulting
 	SetDefaults(config)
+	setting.HubCatalogs = getHubCatalogs(logger, setting.HubCatalogs, config)
 
 	// validate fields
 	if err := Validate(config); err != nil {
@@ -115,14 +134,21 @@ func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[s
 		setting.SecretGhAppTokenScopedExtraRepos = secretGHAppScopedExtraRepos
 	}
 
-	if setting.HubURL != config[HubURLKey] {
-		logger.Infof("CONFIG: hub URL set to %v", config[HubURLKey])
-		setting.HubURL = config[HubURLKey]
+	value, _ := setting.HubCatalogs.Load("default")
+	catalogDefault, ok := value.(HubCatalog)
+	if ok {
+		if catalogDefault.URL != config[HubURLKey] {
+			logger.Infof("CONFIG: hub URL set to %v", config[HubURLKey])
+			catalogDefault.URL = config[HubURLKey]
+		}
+		if catalogDefault.Name != config[HubCatalogNameKey] {
+			logger.Infof("CONFIG: hub catalog name set to %v", config[HubCatalogNameKey])
+			catalogDefault.Name = config[HubCatalogNameKey]
+		}
 	}
-	if setting.HubCatalogName != config[HubCatalogNameKey] {
-		logger.Infof("CONFIG: hub catalog name set to %v", config[HubCatalogNameKey])
-		setting.HubCatalogName = config[HubCatalogNameKey]
-	}
+	setting.HubCatalogs.Store("default", catalogDefault)
+	// TODO: detect changes in extra hub catalogs
+
 	remoteTask := StringToBool(config[RemoteTasksKey])
 	if setting.RemoteTasks != remoteTask {
 		logger.Infof("CONFIG: remote tasks setting set to %v", remoteTask)
@@ -203,6 +229,12 @@ func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[s
 	if setting.CustomConsolePRTaskLog != config[CustomConsolePRTaskLogKey] {
 		logger.Infof("CONFIG: setting custom console pr task log URL to %v", config[CustomConsolePRTaskLogKey])
 		setting.CustomConsolePRTaskLog = config[CustomConsolePRTaskLogKey]
+	}
+
+	rememberOKToTest := StringToBool(config[RememberOKToTestKey])
+	if setting.RememberOKToTest != rememberOKToTest {
+		logger.Infof("CONFIG: setting remember ok-to-test to %v", rememberOKToTest)
+		setting.RememberOKToTest = rememberOKToTest
 	}
 
 	return nil
